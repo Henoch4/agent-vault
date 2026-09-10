@@ -1,10 +1,13 @@
 const VAULT_DEFAULT=`0x9D722b578Ff03791C84F39f0f2F1a78aDd3f9791`;
 const RPC=`https://rpc.bohr.life`;
 const EXPLORER=`https://scan.bohr.life`;
+const CHAIN_ID=0x3c8;
 
 const VAULT_ABI=[
 `function owner() view returns (address)`,
 `function pendingOwner() view returns (address)`,
+`function pendingOwnerAt() view returns (uint256)`,
+`function paused() view returns (bool)`,
 `function agents(address) view returns (bool)`,
 `function targets(address) view returns (bool)`,
 `function dailyLimit(address,address) view returns (uint256)`,
@@ -12,7 +15,6 @@ const VAULT_ABI=[
 `function execCooldown() view returns (uint256)`,
 `function lastExec(address) view returns (uint256)`,
 `function daySpent(address,address) view returns (uint256)`,
-`function paused() view returns (bool)`,
 `function setAgent(address,bool)`,
 `function setTarget(address,bool)`,
 `function setDailyLimit(address,address,uint256)`,
@@ -29,129 +31,206 @@ const VAULT_ABI=[
 let signer=null;
 let account=null;
 
+function el(id){ return document.getElementById(id); }
+function shorten(a){ return a ? a.slice(0,6)+`…`+a.slice(-4) : (a===null?`null`:`—`); }
 function log(m){
-  const el=document.getElementById(`log`);
-  el.textContent+=m+`\n`;
+  for(const id of [`log`,`logfoot`]){
+    const t=el(id);
+    const d=document.createElement(`div`);
+    d.textContent=m;
+    t.appendChild(d);
+    t.scrollTop=t.scrollHeight;
+  }
 }
+function fmtW(n){ return ethers.formatEther(n)+` BOT`; }
+
+function vault(){
+  const a=el(`vaddr`).value.trim()||VAULT_DEFAULT;
+  const p=signer||new ethers.JsonRpcProvider(RPC);
+  return new ethers.Contract(a,VAULT_ABI,p);
+}
+
 async function connect(){
   if(!window.ethereum){ log(`no wallet found, use MetaMask`); return; }
   const accs=await window.ethereum.request({method:`eth_requestAccounts`});
   account=accs[0];
   try{
-    await window.ethereum.request({method:`wallet_switchEthereumChain`,params:[{chainId:`0x3c8`}]});
+    await window.ethereum.request({method:`wallet_switchEthereumChain`,params:[{chainId:`0x${CHAIN_ID.toString(16)}`}]});
   }catch(e){
-    await window.ethereum.request({method:`wallet_addEthereumChain`,params:[{chainId:`0x3c8`,chainName:`BOT Chain Testnet`,nativeCurrency:{name:`BOT`,symbol:`BOT`,decimals:18},rpcUrls:[RPC],blockExplorerUrls:[EXPLORER]}]});
+    await window.ethereum.request({method:`wallet_addEthereumChain`,params:[{chainId:`0x${CHAIN_ID.toString(16)}`,chainName:`BOT Chain Testnet`,nativeCurrency:{name:`BOT`,symbol:`BOT`,decimals:18},rpcUrls:[RPC],blockExplorerUrls:[EXPLORER]}]});
   }
   signer=await new ethers.BrowserProvider(window.ethereum).getSigner();
+  el(`navState`).textContent=shorten(account)+` · testnet`;
+  el(`connectBtn`).textContent=`Connected`;
   log(`connected `+account);
-}
-function vault(){
-  const a=document.getElementById(`vaddr`).value||VAULT_DEFAULT;
-  const p=signer||new ethers.JsonRpcProvider(RPC);
-  return new ethers.Contract(a,VAULT_ABI,p);
+  readPolicy(); refreshDial();
 }
 
-async function send(promise,label){
+async function act(promise,label){
   try{
     const tx=await promise;
     log(label+` sent `+tx.hash);
     await tx.wait();
-    log(label+` confirmed`);
+    log(`✓ `+label+` confirmed`);
+    readPolicy(); refreshDial();
   }catch(e){
-    log(label+` failed `+(e.reason||e.message||e));
+    log(`✗ `+label+` failed: `+(e.reason||e.shortMessage||(e.message||e).split(`\n`)[0]));
   }
 }
-async function doSetAgent(){
+
+async function readPolicy(){
   const v=vault();
-  const a=document.getElementById(`av_a`).value;
-  const on=document.getElementById(`av_on`).value===`true`;
-  await send(v.setAgent(a,on),`setAgent`);
+  try{
+    const now=Math.floor(Date.now()/1000);
+    const owner=await v.owner();
+    const paused=await v.paused();
+    const pending=await v.pendingOwner();
+    const pAt=Number(await v.pendingOwnerAt());
+    const cd=Number(await v.execCooldown());
+    const zero=`0x0000000000000000000000000000000000000000`;
+    const cdTxt=cd?cd+` s`:`off`;
+    el(`stOwner`).textContent=shorten(owner);
+    el(`stPaused`).textContent=paused?`ON`:`off`;
+    el(`stPaused`).className=el(`stPaused`).className=paused?`val on`:`val`;
+    el(`stPending`).textContent=pending===zero?`none`:shorten(pending);
+    el(`stRotationAt`).textContent=pending===zero?`—`:fmtWhen(pAt);
+    el(`stCooldown`).textContent=cdTxt;
+    el(`metaOwner`).textContent=shorten(owner);
+    el(`metaPause`).textContent=paused?`PAUSED`:`live`;
+    el(`metaPause`).style.color=paused?`var(--rust)`:`var(--brass)`;
+
+    const pendingNonzero=pending!==zero;
+    el(`tlPropose`).classList.toggle(`live`,pendingNonzero);
+    el(`tlWait`).classList.toggle(`live`,pendingNonzero);
+    const canAccept=pendingNonzero && now>=pAt+2*86400;
+    el(`tlAccept`).classList.toggle(`live`,canAccept);
+
+    if(pendingNonzero){
+      el(`rotationStatus`).style.display=`block`;
+      const remain=pAt+2*86400-now;
+      el(`rotationStatus`).textContent=canAccept
+        ?`acceptOwner is ready — pending ${shorten(pending)} can take ownership now`
+        :`rotation to ${shorten(pending)} pending · accept unlocks ${remain>0?(Math.ceil(remain/3600))+'h':''} (2-day timelock)`;
+    }else{
+      el(`rotationStatus`).style.display=`none`;
+    }
+  }catch(e){
+    log(`read policy failed: `+(e.shortMessage||e.message));
+  }
 }
-async function doSetTarget(){
+function fmtWhen(ts){
+  if(!ts)return `—`;
+  const d=new Date(ts*1000);
+  return d.toLocaleString();
+}
+
+async function refreshDial(){
   const v=vault();
-  const a=document.getElementById(`tg_t`).value;
-  const on=document.getElementById(`tg_on`).value===`true`;
-  await send(v.setTarget(a,on),`setTarget`);
+  const agent=el(`dialAgent`).value.trim();
+  const token=el(`dialToken`).value.trim()||`0x0000000000000000000000000000000000000000`;
+  if(!agent || !/^0x[0-9a-fA-F]{40}$/.test(agent)){
+    for(const id of [`limitVal`,`usedVal`,`ptxVal`,`cdVal`,`leVal`])el(id).textContent=`—`;
+    el(`meterFill`).style.width=`0%`;
+    el(`meterFill`).classList.remove(`denied`);
+    return;
+  }
+  try{
+    const daily=await v.dailyLimit(agent,token);
+    const spent=await v.daySpent(agent,token);
+    const ptl=await v.perTxLimit(agent,token);
+    const le=Number(await v.lastExec(agent));
+    el(`limitVal`).textContent=`${fmtW(daily)}`;
+    el(`usedVal`).textContent=`${fmtW(spent)}`;
+    el(`ptxVal`).textContent=ptl===0n?`no cap`:fmtW(ptl);
+    el(`cdVal`).textContent=Number(await v.execCooldown())?Number(await v.execCooldown())+` s`:`off`;
+    el(`leVal`).textContent=le?new Date(le*1000).toLocaleString():`never`;
+    const pct=Number(spent*10000n/daily)/100;
+    const fill=el(`meterFill`);
+    fill.style.width=(daily===0n?100:Math.min(100,pct))+'%';
+    const over=daily!==0n && spent>=daily;
+    fill.classList.toggle(`denied`,over);
+  }catch(e){
+    log(`policy read failed: `+(e.shortMessage||e.message));
+    el(`limitVal`).textContent=`err`;
+  }
 }
-async function doSetLimit(){
-  const v=vault();
-  const a=document.getElementById(`lim_a`).value;
-  const t=document.getElementById(`lim_t`).value;
-  const amt=ethers.parseEther(document.getElementById(`lim_v`).value||`0`);
-  await send(v.setDailyLimit(a,t,amt),`setDailyLimit`);
-}
-async function doSetPerTx(){
-  const v=vault();
-  const a=document.getElementById(`ptx_a`).value;
-  const t=document.getElementById(`ptx_t`).value;
-  const amt=ethers.parseEther(document.getElementById(`ptx_v`).value||`0`);
-  await send(v.setPerTxLimit(a,t,amt),`setPerTxLimit`);
-}
-async function doSetCooldown(){
-  const v=vault();
-  const secs=Number(document.getElementById(`cd_v`).value||`0`);
-  await send(v.setExecCooldown(secs),`setExecCooldown`);
-}
-async function doPropose(){
-  const v=vault();
-  await send(v.proposeOwner(document.getElementById(`ro_p`).value),`proposeOwner`);
-}
-async function doCancelRotation(){
-  const v=vault();
-  await send(v.cancelOwnerRotation(),`cancelOwnerRotation`);
-}
-async function doAccept(){
-  const v=vault();
-  await send(v.acceptOwner(),`acceptOwner`);
-}
+
 async function doExecute(){
   const v=vault();
-  const t=document.getElementById(`ex_tok`).value;
-  const to=document.getElementById(`ex_tgt`).value;
-  const amt=ethers.parseEther(document.getElementById(`ex_amt`).value||`0`);
-  await send(v.execute(t,to,amt,`0x`),`execute`);
-}
-async function doRead(){
-  const v=vault();
-  const a=document.getElementById(`rd_a`).value;
-  const tk=document.getElementById(`rd_t`).value;
-  log(`owner `+await v.owner());
-  log(`pendingOwner `+await v.pendingOwner());
-  log(`paused `+await v.paused());
-  log(`execCooldown `+Number(await v.execCooldown())+` secs`);
-  if(a){
-    log(`isAgent `+await v.agents(a));
-    if(tk){
-      log(`dailyLimit `+ethers.formatEther(await v.dailyLimit(a,tk)));
-      log(`perTxLimit `+ethers.formatEther(await v.perTxLimit(a,tk)));
-      log(`spentToday `+ethers.formatEther(await v.daySpent(a,tk)));
-    }
-    const le=Number(await v.lastExec(a));
-    if(le)log(`lastExec `+new Date(le*1000).toISOString());
+  const target=el(`exTgt`).value.trim();
+  const amt=el(`exAmt`).value.trim();
+  const token=el(`dialToken`).value.trim()||`0x0000000000000000000000000000000000000000`;
+  const verdict=el(`verdict`);
+  if(!target || !amt){
+    verdict.className=`verdict denied`;
+    el(`verdictText`).innerHTML=`Missing target or amount`;
+    return;
+  }
+  if(!signer){ await connect(); if(!signer)return; }
+  el(`execBtn`).disabled=true;
+  verdict.className=`verdict`;
+  el(`verdictText`).textContent=`Sending…`;
+  try{
+    const tx=await v.execute(token,target,ethers.parseEther(amt),`0x`);
+    log(`execute sent `+tx.hash);
+    await tx.wait();
+    verdict.className=`verdict approved`;
+    el(`verdictText`).innerHTML=`Transfer sent — no owner signature needed`;
+    el(`reqLine`).textContent=`Executed `+amt+` → `+shorten(target);
+    readPolicy(); refreshDial();
+  }catch(e){
+    const reason=e.reason||e.shortMessage||(e.message||e).split(`\n`)[0];
+    verdict.className=`verdict denied`;
+    el(`verdictText`).innerHTML=`Denied &nbsp;<span class="reason mono">${reason}</span>`;
+    log(`✗ execute failed: `+reason);
+  }finally{
+    el(`execBtn`).disabled=false;
   }
 }
-async function doPause(){
+
+async function doOwnercmd(kind){
   const v=vault();
-  const on=document.getElementById(`p_on`).value===`true`;
-  await send(v.setPaused(on),`setPaused`);
+  const is=(a)=>a.trim();
+  switch(kind){
+    case `agent`:
+      return act(v.setAgent(is(el(`ag_addr`).value),el(`ag_on`).value===`true`),`setAgent`);
+    case `target`:
+      return act(v.setTarget(is(el(`tg_t`).value),el(`tg_on`).value===`true`),`setTarget`);
+    case `limit`:
+      return act(v.setDailyLimit(is(el(`lim_a`).value),is(el(`lim_t`).value),ethers.parseEther(el(`lim_v`).value||`0`)),`setDailyLimit`);
+    case `percd`:
+      await act(v.setPerTxLimit(is(el(`ptx_a`).value),is(el(`ptx_t`).value),ethers.parseEther(el(`ptx_v`).value||`0`)),`setPerTxLimit`);
+      await act(v.setExecCooldown(Number(el(`cd_v`).value||`0`)),`setExecCooldown`);
+      return;
+    case `pause`:
+      return act(v.setPaused(el(`p_on`).value===`true`),`setPaused`);
+    case `withdraw`:
+      return act(v.ownerWithdraw(is(el(`w_tok`).value),ethers.parseEther(el(`w_amt`).value||`0`),is(el(`w_to`).value)),`ownerWithdraw`);
+    case `propose`:
+      return act(v.proposeOwner(is(el(`ro_p`).value)),`proposeOwner`);
+    case `cancel`:
+      return act(v.cancelOwnerRotation(),`cancelOwnerRotation`);
+    case `accept`:
+      return act(v.acceptOwner(),`acceptOwner`);
+  }
 }
-async function doWithdraw(){
-  const v=vault();
-  const t=document.getElementById(`w_tok`).value;
-  const amt=ethers.parseEther(document.getElementById(`w_amt`).value||`0`);
-  const to=document.getElementById(`w_to`).value;
-  await send(v.ownerWithdraw(t,amt,to),`ownerWithdraw`);
-}
-document.getElementById(`b_connect`).addEventListener(`click`,connect);
-document.getElementById(`b_setagent`).addEventListener(`click`,doSetAgent);
-document.getElementById(`b_settarget`).addEventListener(`click`,doSetTarget);
-document.getElementById(`b_setlimit`).addEventListener(`click`,doSetLimit);
-document.getElementById(`b_setper`).addEventListener(`click`,doSetPerTx);
-document.getElementById(`b_setcd`).addEventListener(`click`,doSetCooldown);
-document.getElementById(`b_exec`).addEventListener(`click`,doExecute);
-document.getElementById(`b_read`).addEventListener(`click`,doRead);
-document.getElementById(`b_pause`).addEventListener(`click`,doPause);
-document.getElementById(`b_withdraw`).addEventListener(`click`,doWithdraw);
-document.getElementById(`b_propose`).addEventListener(`click`,doPropose);
-document.getElementById(`b_cancelrotation`).addEventListener(`click`,doCancelRotation);
-document.getElementById(`b_accept`).addEventListener(`click`,doAccept);
+
+document.addEventListener(`DOMContentLoaded`,()=>{
+  el(`vaddr`).value=VAULT_DEFAULT;
+  el(`connectBtn`).addEventListener(`click`,connect);
+  el(`refreshBtn`).addEventListener(`click`,()=>{ readPolicy(); refreshDial(); });
+  el(`execBtn`).addEventListener(`click`,doExecute);
+  el(`b_setagent`).addEventListener(`click`,()=>doOwnercmd(`agent`));
+  el(`b_settarget`).addEventListener(`click`,()=>doOwnercmd(`target`));
+  el(`b_setlimit`).addEventListener(`click`,()=>doOwnercmd(`limit`));
+  el(`b_setpercd`).addEventListener(`click`,()=>doOwnercmd(`percd`));
+  el(`b_pause`).addEventListener(`click`,()=>doOwnercmd(`pause`));
+  el(`b_withdraw`).addEventListener(`click`,()=>doOwnercmd(`withdraw`));
+  el(`b_propose`).addEventListener(`click`,()=>doOwnercmd(`propose`));
+  el(`b_cancelrotation`).addEventListener(`click`,()=>doOwnercmd(`cancel`));
+  el(`b_accept`).addEventListener(`click`,()=>doOwnercmd(`accept`));
+  el(`clearLog`).addEventListener(`click`,(e)=>{ e.preventDefault(); for(const id of [`log`,`logfoot`])el(id).innerHTML=``; });
+  el(`vaddr`).addEventListener(`change`,()=>{ readPolicy(); refreshDial(); });
+  for(const id of [`dialAgent`,`dialToken`])el(id).addEventListener(`change`,refreshDial);
+  readPolicy();
+});

@@ -1,36 +1,610 @@
 <!DOCTYPE html>
-<html lang=en>
+<html lang="en">
 <head>
-<meta charset=utf-8>
-<meta name=viewport content=width=device-width,initial-scale=1>
-<title>AgentVault - BOT Chain Testnet</title>
-<script src=https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js></script>
-<style>body{font-family:sans-serif;max-width:720px;margin:24px auto;padding:0 12px}input{width:100%;margin:2px 0}button{margin:4px 4px 4px 0}pre{background:#111;color:#0f0;padding:12px;white-space:pre-wrap}</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentVault — an allowance for autonomous agents</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12151A;
+    --panel:#1B1F27;
+    --panel-2:#20242D;
+    --brass:#C99A55;
+    --brass-soft:#8a713f;
+    --steel:#7FA6B3;
+    --rust:#B5523A;
+    --text:#EDEAE2;
+    --muted:#8B92A0;
+    --hairline:rgba(237,234,226,0.12);
+    --hairline-strong:rgba(237,234,226,0.22);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Archivo',sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  a{color:inherit;}
+
+  .wrap{max-width:1120px;margin:0 auto;padding:0 32px;}
+  @media(max-width:640px){.wrap{padding:0 20px;}}
+  @media(max-width:380px){.wrap{padding:0 14px;}}
+
+  /* ---------- nav ---------- */
+  nav{
+    position:sticky;top:0;z-index:20;
+    background:rgba(18,21,26,0.88);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--hairline);
+  }
+  .nav-inner{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:20px 0;
+  }
+  @media(max-width:560px){.nav-inner{padding:14px 0;gap:8px;}}
+  .logo{
+    display:flex;align-items:center;gap:10px;
+    font-weight:700;font-size:18px;letter-spacing:0.01em;
+  }
+  @media(max-width:380px){.logo{font-size:15px;}}
+  .logo-mark{
+    width:22px;height:22px;flex:none;
+    border:1.5px solid var(--brass);
+    border-radius:3px;
+    position:relative;
+  }
+  .logo-mark::after{
+    content:"";position:absolute;inset:5px;
+    border:1.5px solid var(--brass);border-radius:1px;
+  }
+  .nav-links{display:flex;align-items:center;gap:36px;font-size:14.5px;color:var(--muted);}
+  .nav-links a{text-decoration:none;transition:color .15s ease;}
+  .nav-links a:hover, .nav-links a:focus-visible{color:var(--text);}
+  .nav-wallet{display:flex;align-items:center;gap:12px;}
+  @media(max-width:760px){.nav-links a:not(.nav-cta){display:none;}}
+  @media(max-width:560px){
+    .nav-links{gap:10px;}
+    #navState{display:none;}
+    .nav-links .btn{padding:9px 14px;font-size:13.5px;}
+  }
+
+  .btn{
+    appearance:none;border:none;cursor:pointer;
+    font-family:'Archivo',sans-serif;font-weight:600;font-size:14.5px;
+    padding:11px 20px;border-radius:6px;
+    transition:transform .12s ease, background .15s ease, border-color .15s ease;
+  }
+  .btn:focus-visible{outline:2px solid var(--steel);outline-offset:2px;}
+  .btn-primary{background:var(--brass);color:#1a1508;}
+  .btn-primary:hover{background:#dcab63;}
+  .btn-ghost{background:transparent;color:var(--text);border:1px solid var(--hairline-strong);}
+  .btn-ghost:hover{border-color:var(--brass);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+
+  /* ---------- live status strip ---------- */
+  .status-strip{
+    display:flex;flex-wrap:wrap;gap:8px 28px;
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--muted);
+  }
+  .status-strip span{display:inline-block;}
+  .status-strip .val{color:var(--text);}
+  .status-strip .val.on{color:var(--rust);}
+  .status-strip .val.ok{color:var(--brass);}
+
+  /* ---------- hero ---------- */
+  header.hero{padding:72px 0 60px;}
+  .hero-grid{
+    display:grid;grid-template-columns:1.05fr 0.95fr;gap:64px;align-items:start;
+  }
+  @media(max-width:900px){.hero-grid{grid-template-columns:1fr;gap:44px;}}
+
+  .kicker{
+    color:var(--steel);font-size:14.5px;margin:0 0 18px;
+  }
+  h1{
+    font-size:clamp(32px,4.6vw,54px);
+    line-height:1.08;
+    font-weight:800;
+    letter-spacing:-0.015em;
+    margin:0 0 22px;
+  }
+  .hero p.lead{
+    font-size:17.5px;color:var(--muted);max-width:46ch;margin:0 0 34px;
+  }
+  .hero-ctas{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:36px;}
+
+  .hero-meta{
+    display:flex;gap:28px;flex-wrap:wrap;
+    padding-top:26px;border-top:1px solid var(--hairline);
+  }
+  .hero-meta div{font-size:13px;color:var(--muted);}
+  .hero-meta strong{display:block;color:var(--text);font-size:15px;font-weight:600;margin-bottom:3px;}
+
+  /* ---------- policy dial widget ---------- */
+  .dial-panel{
+    background:var(--panel);
+    border:1px solid var(--hairline-strong);
+    border-radius:10px;
+    padding:26px 26px 22px;
+  }
+  .dial-panel-head{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:18px;gap:10px;flex-wrap:wrap;
+  }
+  .dial-panel-head .title{font-size:13.5px;color:var(--muted);}
+  .dial-panel-head .title input{
+    background:var(--panel-2);border:1px solid var(--hairline);border-radius:4px;
+    color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12.5px;
+    padding:3px 8px;width:150px;
+  }
+  @media(max-width:400px){.dial-panel-head .title input{width:120px;}}
+  .dial-panel-head .pill{
+    font-size:12px;color:var(--steel);border:1px solid rgba(127,166,179,0.4);
+    padding:3px 9px;border-radius:20px;white-space:nowrap;
+  }
+  .dial-panel-head .pill.live{color:var(--brass);border-color:rgba(201,154,85,.5);}
+  .dial-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;gap:12px;}
+  .dial-row .label{font-size:13.5px;color:var(--muted);}
+  .dial-row .value{font-size:14.5px;word-break:break-all;text-align:right;}
+  .meter{
+    height:9px;border-radius:5px;background:var(--panel-2);
+    overflow:hidden;margin:10px 0 20px;border:1px solid var(--hairline);
+  }
+  .meter-fill{
+    height:100%;border-radius:5px;
+    background:linear-gradient(90deg,var(--brass-soft),var(--brass));
+    width:0%;transition:width .5s cubic-bezier(.4,0,.2,1), background .3s ease;
+  }
+  .meter-fill.denied{background:linear-gradient(90deg,#7a3527,var(--rust));}
+
+  .request-box{
+    background:var(--panel-2);border:1px solid var(--hairline);
+    border-radius:8px;padding:14px 16px;margin:6px 0 16px;
+  }
+  .reqline{font-size:14px;}
+  .reqline .amt{color:var(--brass);}
+  .field{margin-bottom:10px;}
+  .field label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:4px;font-family:'IBM Plex Mono',monospace;}
+  .field input,.field select{
+    width:100%;background:var(--bg);border:1px solid var(--hairline);border-radius:5px;
+    color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:8px 10px;
+  }
+  .field input:focus,.field select:focus{outline:none;border-color:var(--brass-soft);}
+  .req-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  @media(max-width:400px){.req-grid{grid-template-columns:1fr;}}
+
+  #execBtn{width:100%;}
+
+  .verdict{
+    display:flex;align-items:center;gap:9px;
+    font-size:14.5px;font-weight:600;margin:16px 0 12px;min-height:22px;
+  }
+  .verdict .dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:none;}
+  .verdict.approved .dot{background:var(--steel);}
+  .verdict.denied .dot{background:var(--rust);}
+  .verdict.approved{color:var(--steel);}
+  .verdict.denied{color:var(--rust);}
+  .verdict .reason{color:var(--muted);font-weight:400;}
+
+  .log{
+    background:#0e1116;border:1px solid var(--hairline);border-radius:8px;
+    font-size:12.5px;color:var(--muted);padding:12px 14px;
+    height:110px;overflow-y:auto;margin:0;white-space:pre-wrap;word-break:break-all;
+  }
+  .log .fresh{color:var(--text);}
+
+  /* ---------- console (owner) ---------- */
+  .console-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:760px){.console-grid{grid-template-columns:1fr;}}
+  .console-card{
+    background:var(--panel);border:1px solid var(--hairline-strong);border-radius:10px;
+    padding:18px 18px 16px;
+  }
+  .console-card h3{margin:0 0 12px;font-size:15px;font-weight:600;}
+  .console-card .sub{font-size:12px;color:var(--muted);margin:-6px 0 12px;}
+  .console-card .btn{width:100%;}
+  .console-card .row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:var(--muted);}
+  .console-card .row b{color:var(--text);font-weight:600;}
+  .rotation-status{
+    margin-top:10px;font-size:12px;color:var(--steel);font-family:'IBM Plex Mono',monospace;
+    display:none;word-break:break-all;
+  }
+
+  /* ---------- sections shared ---------- */
+  section{padding:88px 0;border-top:1px solid var(--hairline);}
+  @media(max-width:640px){section{padding:60px 0;}}
+  .section-head{max-width:56ch;margin-bottom:52px;}
+  @media(max-width:640px){.section-head{margin-bottom:32px;}}
+  .section-head .kicker{margin-bottom:14px;}
+  h2{font-size:clamp(26px,3.2vw,36px);font-weight:700;letter-spacing:-0.01em;margin:0 0 14px;}
+  .section-head p{color:var(--muted);font-size:16px;margin:0;}
+
+  /* ---------- how it works ---------- */
+  .steps{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:0;
+    border-top:1px solid var(--hairline-strong);
+  }
+  @media(max-width:860px){.steps{grid-template-columns:1fr 1fr;}}
+  @media(max-width:520px){.steps{grid-template-columns:1fr;}}
+  .step{
+    padding:26px 24px 26px 0;
+    border-right:1px solid var(--hairline);
+  }
+  .step:last-child{border-right:none;}
+  @media(max-width:860px){
+    .step{border-right:1px solid var(--hairline);border-bottom:1px solid var(--hairline);padding:24px;}
+    .step:nth-child(2n){border-right:none;}
+  }
+  .step-num{
+    font-family:'IBM Plex Mono',monospace;color:var(--brass);font-size:13px;margin-bottom:14px;
+  }
+  .step h3{font-size:17px;margin:0 0 8px;font-weight:600;}
+  .step p{color:var(--muted);font-size:14.5px;margin:0;}
+
+  /* ---------- guardrails ---------- */
+  .guardrails{display:flex;flex-direction:column;}
+  .guardrail{
+    display:grid;grid-template-columns:220px 1fr 200px;gap:24px;align-items:start;
+    padding:28px 0;border-bottom:1px solid var(--hairline);
+  }
+  .guardrail:first-child{border-top:1px solid var(--hairline);}
+  @media(max-width:760px){.guardrail{grid-template-columns:1fr;gap:8px;}}
+  .guardrail h3{font-size:18px;margin:0;font-weight:600;}
+  .guardrail p{color:var(--muted);font-size:14.5px;margin:0;max-width:52ch;}
+  .guardrail .live-note{font-size:12px;color:var(--muted);margin-top:4px;font-family:'IBM Plex Mono',monospace;}
+  .guardrail .errcode{
+    justify-self:end;text-align:right;font-size:12.5px;color:var(--muted);
+  }
+  @media(max-width:760px){.guardrail .errcode{justify-self:start;text-align:left;}}
+  .guardrail .errcode .tag{
+    display:inline-block;color:var(--rust);border:1px solid rgba(181,82,58,0.4);
+    border-radius:5px;padding:3px 8px;margin-bottom:6px;
+  }
+  .guardrail .errcode .ok-tag{
+    display:inline-block;color:var(--steel);border:1px solid rgba(127,166,179,.4);
+    border-radius:5px;padding:3px 8px;margin-bottom:6px;
+  }
+
+  /* ---------- security timeline ---------- */
+  .timeline{
+    display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;
+    margin-top:8px;position:relative;
+  }
+  @media(max-width:760px){.timeline{grid-template-columns:1fr;}}
+  .tl-item{
+    padding:0 28px 0 0;position:relative;
+  }
+  .tl-item + .tl-item{padding-left:28px;}
+  @media(max-width:760px){
+    .tl-item{padding:0 0 28px 28px !important;}
+    .tl-item::before{left:0 !important;top:4px !important;bottom:-28px !important;border-left:1px solid var(--hairline-strong) !important;border-top:none !important;width:0 !important;height:auto !important;}
+  }
+  .tl-item::before{
+    content:"";position:absolute;top:5px;left:0;right:0;height:1px;
+    background:var(--hairline-strong);
+  }
+  .tl-item:first-child::before{display:none;}
+  .tl-dot{
+    width:9px;height:9px;border-radius:50%;background:var(--brass);
+    margin-bottom:16px;
+  }
+  .tl-item h4{font-size:15.5px;margin:0 0 6px;font-weight:600;}
+  .tl-item p{color:var(--muted);font-size:14px;margin:0;}
+  .tl-item .dur{color:var(--brass);font-family:'IBM Plex Mono',monospace;font-size:13px;display:block;margin-top:8px;}
+  .tl-item.live h4{color:var(--brass);}
+
+  .safety-note{
+    display:flex;gap:14px;align-items:flex-start;
+    margin-top:44px;padding:18px 20px;border:1px solid var(--hairline-strong);
+    border-radius:8px;background:var(--panel);
+  }
+  .safety-note .sw{flex:none;margin-top:2px;}
+  .safety-note p{margin:0;color:var(--muted);font-size:14px;}
+  .safety-note strong{color:var(--text);}
+
+  /* ---------- footer ---------- */
+  footer{padding:56px 0 64px;}
+  .foot-grid{
+    display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:40px;
+    padding-bottom:32px;border-bottom:1px solid var(--hairline);margin-bottom:24px;
+  }
+  @media(max-width:700px){.foot-grid{grid-template-columns:1fr;gap:32px;}}
+  .foot-col h5{font-size:13px;color:var(--muted);margin:0 0 14px;font-weight:600;}
+  .foot-col .row{display:flex;justify-content:space-between;font-size:13.5px;padding:6px 0;color:var(--text);gap:10px;flex-wrap:wrap;}
+  .foot-col .row span:first-child{color:var(--muted);}
+  .addr-field{margin-top:10px;}
+  .addr-field input{
+    width:100%;background:var(--panel);border:1px solid var(--hairline);border-radius:4px;
+    color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:5px 9px;
+  }
+  .foot-bottom{
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;
+    font-size:13px;color:var(--muted);
+  }
+  .foot-bottom a{color:var(--brass);text-decoration:none;}
+  #logfoot{max-height:120px;overflow:auto;white-space:pre-wrap;word-break:break-all;}
+
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    .meter-fill{transition:none;}
+  }
+</style>
 </head>
 <body>
-<h1>AgentVault - BOT Chain Testnet</h1>
-<p>Policy vault: owner sets agents, targets, daily limits. Chain 968. Faucet link below.</p>
-<button id=b_connect>Connect wallet</button>
-<p>Vault contract <input id=vaddr size=44></p>
-<h2>Owner - configure</h2>
-<p>Agent <input id=av_a> allowed true or false <input id=av_on value=true> <button id=b_setagent>Set agent</button></p>
 
-<p>Target <input id=tg_t> allowed true or false <input id=tg_on value=true> <button id=b_settarget>Set target</button></p>
-<p>Limit agent <input id=lim_a> token, use 0x0 for native BOT <input id=lim_t> amount in BOT <input id=lim_v> <button id=b_setlimit>Set daily limit</button></p>
-<p>Per-tx cap agent <input id=ptx_a> token <input id=ptx_t> amount in BOT, 0 = no cap <input id=ptx_v> <button id=b_setper>Set per-tx cap</button></p>
-<p>Exec cooldown in seconds, 0 = off <input id=cd_v> <button id=b_setcd>Set cooldown</button></p>
-<p>Pause true or false <input id=p_on value=false> <button id=b_pause>Set paused</button></p>
-<h2>Owner - rotation (2-day timelock)</h2>
-<p>New owner <input id=ro_p> <button id=b_propose>Propose</button> <button id=b_cancelrotation>Cancel</button> <button id=b_accept>Accept (as pending owner)</button></p>
-<h2>Agent - spend</h2>
-<p>Token <input id=ex_tok> to target <input id=ex_tgt> amount in BOT <input id=ex_amt> <button id=b_exec>Execute</button></p>
-<h2>Read state</h2>
-<p>Agent <input id=rd_a> token <input id=rd_t> <button id=b_read>Read</button></p>
-<h2>Owner - withdraw</h2>
-<p>Token <input id=w_tok> amount <input id=w_amt> to <input id=w_to> <button id=b_withdraw>Withdraw</button></p>
-<h2>Log</h2>
-<pre id=log></pre>
-<p><a href=https://faucet.botchain.ai/basic>Testnet faucet</a> - <a href=https://scan.bohr.life>Testnet explorer</a></p>
-<script src=app.js></script>
+<nav>
+  <div class="wrap nav-inner">
+    <div class="logo"><span class="logo-mark" aria-hidden="true"></span>AgentVault</div>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#guardrails">Guardrails</a>
+      <a href="#security">Security</a>
+      <div class="nav-wallet">
+        <span id="navState" class="mono">read-only</span>
+        <a href="#demo" class="btn btn-primary nav-cta" id="connectBtn">Connect wallet</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <p class="kicker mono">On-chain policy engine · BOT Chain</p>
+      <h1>Give your agents an allowance, not a blank check.</h1>
+      <p class="lead">AgentVault holds the funds and the rules. You set who can spend, where it can go, and how much per day. Your agent executes inside those lines with no extra signature — and can't step outside them, even if it tries.</p>
+      <div class="hero-ctas">
+        <a href="#demo" class="btn btn-primary">Try the policy dial</a>
+        <a href="#how" class="btn btn-ghost">See how it works</a>
+      </div>
+      <div class="hero-meta">
+        <div><strong id="metaOwner">0x…</strong>vault owner</div>
+        <div><strong id="metaPause">—</strong>spending state</div>
+        <div><strong>48 hr</strong>delay on any ownership change</div>
+      </div>
+    </div>
+
+    <div class="dial-panel" id="demo">
+      <div class="dial-panel-head">
+        <span class="title">Agent: <input id="dialAgent" value="0x" placeholder="agent address"></span>
+        <span class="pill mono live">live policy</span>
+      </div>
+      <div class="dial-row"><span class="label">Token</span><span class="value mono"><input id="dialToken" style="background:var(--panel-2);border:1px solid var(--hairline);border-radius:4px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12.5px;padding:3px 8px;width:150px;" value="0x" placeholder="token or 0x0 native"></span></div>
+      <div class="dial-row"><span class="label">Daily limit</span><span class="value mono" id="limitVal">—</span></div>
+      <div class="meter"><div class="meter-fill" id="meterFill"></div></div>
+      <div class="dial-row"><span class="label">Used today</span><span class="value mono" id="usedVal">—</span></div>
+      <div class="dial-row"><span class="label">Per-tx cap</span><span class="value mono" id="ptxVal">—</span></div>
+      <div class="dial-row"><span class="label">Cooldown</span><span class="value mono" id="cdVal">—</span></div>
+      <div class="dial-row"><span class="label">Last exec</span><span class="value mono" id="leVal">—</span></div>
+
+      <div class="request-box">
+        <div class="req-grid">
+          <div class="field"><label>Target</label><input id="exTgt" placeholder="allowlisted address"></div>
+          <div class="field"><label>Amount (BOT / token)</label><input id="exAmt" type="number" step="0.001" placeholder="0.500"></div>
+        </div>
+        <button class="btn btn-primary" id="execBtn">Execute as agent →</button>
+        <div class="reqline mono" style="margin-top:10px;" id="reqLine">Connected agent sends the request; policy checks gate it.</div>
+      </div>
+
+      <div class="verdict" id="verdict"><span class="dot"></span><span id="verdictText">Awaiting request</span></div>
+
+      <pre class="log mono" id="log"></pre>
+      <div class="dial-row" style="margin-top:8px;"><button class="btn btn-ghost" id="refreshBtn" style="width:100%;font-size:13px;padding:8px;">Refresh policy reads</button></div>
+    </div>
+  </div>
+</header>
+
+<main>
+<section id="policy-console">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="kicker mono">Owner console</p>
+      <h2>Write the policy, keep the keys</h2>
+      <div class="status-strip">
+        <span>owner <span class="val" id="stOwner">—</span></span>
+        <span>paused <span class="val" id="stPaused">—</span></span>
+        <span>pendingOwner <span class="val" id="stPending">—</span></span>
+        <span>rotationAt <span class="val" id="stRotationAt">—</span></span>
+        <span>execCooldown <span class="val" id="stCooldown">—</span></span>
+      </div>
+    </div>
+    <div class="console-grid">
+      <div class="console-card">
+        <h3>Agents</h3>
+        <div class="sub">Allow or block an address that may spend from the vault.</div>
+        <div class="field"><label>Agent address</label><input id="ag_addr" placeholder="0x…"></div>
+        <div class="field"><label>Status</label><select id="ag_on"><option value="true">allow</option><option value="false">block</option></select></div>
+        <button class="btn btn-primary" id="b_setagent">setAgent →</button>
+      </div>
+      <div class="console-card">
+        <h3>Destinations</h3>
+        <div class="sub">Allowlist where vault funds may be paid out.</div>
+        <div class="field"><label>Target address</label><input id="tg_t" placeholder="0x…"></div>
+        <div class="field"><label>Status</label><select id="tg_on"><option value="true">allow</option><option value="false">block</option></select></div>
+        <button class="btn btn-primary" id="b_settarget">setTarget →</button>
+      </div>
+      <div class="console-card">
+        <h3>Daily limit</h3>
+        <div class="sub">Per agent, per token, resets every 24h.</div>
+        <div class="field"><label>Agent</label><input id="lim_a" placeholder="0x…"></div>
+        <div class="field"><label>Token</label><input id="lim_t" placeholder="0x0 for native BOT"></div>
+        <div class="field"><label>Limit (BOT)</label><input id="lim_v" type="number" step="0.001" placeholder="100"></div>
+        <button class="btn btn-primary" id="b_setlimit">setDailyLimit →</button>
+      </div>
+      <div class="console-card">
+        <h3>Per-tx cap &amp; cooldown</h3>
+        <div class="sub">Optional. 0 = no cap, no pause between executions.</div>
+        <div class="field"><label>Agent</label><input id="ptx_a" placeholder="0x…"></div>
+        <div class="field"><label>Token</label><input id="ptx_t" placeholder="0x0 for native BOT"></div>
+        <div class="field"><label>Per-tx cap (BOT)</label><input id="ptx_v" type="number" step="0.001" placeholder="0 = off"></div>
+        <div class="field"><label>Cooldown (seconds)</label><input id="cd_v" type="number" placeholder="60"></div>
+        <button class="btn btn-primary" id="b_setpercd">setPerTxLimit + setExecCooldown →</button>
+      </div>
+      <div class="console-card">
+        <h3>Pause &amp; withdraw</h3>
+        <div class="sub">Freeze all spending instantly; owner can pull funds.</div>
+        <div class="field"><label>Pause state</label><select id="p_on"><option value="true">pause vault</option><option value="false">unpause</option></select></div>
+        <button class="btn" id="b_pause">setPaused →</button>
+        <hr style="border:none;border-top:1px solid var(--hairline);margin:14px 0;">
+        <div class="field"><label>Token</label><input id="w_tok" placeholder="0x0 for native BOT"></div>
+        <div class="field"><label>Amount</label><input id="w_amt" type="number" step="0.001" placeholder="0"></div>
+        <div class="field"><label>To</label><input id="w_to" placeholder="0x…"></div>
+        <button class="btn" id="b_withdraw">ownerWithdraw →</button>
+      </div>
+      <div class="console-card">
+        <h3>Two-step owner rotation</h3>
+        <div class="sub">No single click hands the vault away — propose, wait 48h, accept.</div>
+        <div class="field"><label>New owner</label><input id="ro_p" placeholder="0x…"></div>
+        <button class="btn btn-primary" id="b_propose">proposeOwner →</button>
+        <hr style="border:none;border-top:1px solid var(--hairline);margin:14px 0;">
+        <button class="btn" id="b_cancelrotation">cancelOwnerRotation →</button>
+        <button class="btn" id="b_accept">acceptOwner (from pending) →</button>
+        <div class="rotation-status" id="rotationStatus"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="kicker mono">How it works</p>
+      <h2>Four steps from deposit to enforced spending</h2>
+      <p>The same rules apply whether your agent is a trading bot, a payments assistant, or a script running on a schedule.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <h3>Fund the vault</h3>
+        <p>Deposit native BOT or any ERC-20 token into the contract. The vault holds custody — never the agent.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <h3>Write the policy</h3>
+        <p>Name your agents, allowlist the destinations they can pay, and set a daily ceiling per token.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <h3>Agent executes</h3>
+        <p>Inside those lines, a transfer goes straight through. No pop-up, no second signature, no waiting on you.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <h3>You stay in control</h3>
+        <p>Pause the vault instantly, tighten a limit mid-day, or start a two-day timelocked handover of ownership.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="guardrails">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="kicker mono">Guardrails</p>
+      <h2>Every request passes four checks before it moves</h2>
+      <p>Each one is enforced by the contract itself — not by a dashboard setting an agent could ignore.</p>
+    </div>
+    <div class="guardrails">
+      <div class="guardrail">
+        <h3>Allowlisted targets</h3>
+        <p>An agent can only pay addresses you've explicitly approved. Anywhere else, the transfer never leaves the vault.</p>
+        <div class="errcode"><span class="tag mono">TargetDenied</span></div>
+      </div>
+      <div class="guardrail">
+        <h3>Daily limit</h3>
+        <p>Each agent gets a per-token ceiling that resets every 24 hours. Spend it down, and requests wait for the next window.</p>
+        <div class="errcode"><span class="tag mono">OverLimit</span></div>
+      </div>
+      <div class="guardrail">
+        <h3>Per-transaction cap</h3>
+        <p>An optional ceiling on any single transfer, so one runaway request can't burn a whole day's allowance at once.</p>
+        <div class="errcode"><span class="tag mono">OverPerTx</span></div>
+      </div>
+      <div class="guardrail">
+        <h3>Execution cooldown</h3>
+        <p>A minimum pause between transfers, in case an agent starts firing requests faster than intended.</p>
+        <div class="errcode"><span class="tag mono">CooldownActive</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="security">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="kicker mono">Ownership &amp; safety</p>
+      <h2>No single click can hand the vault away</h2>
+      <p>Changing who controls the vault is deliberately slow. Everything else is instant.</p>
+    </div>
+    <div class="timeline">
+      <div class="tl-item" id="tlPropose">
+        <div class="tl-dot"></div>
+        <h4>Propose</h4>
+        <p>The current owner names a new owner. Nothing changes yet.</p>
+        <span class="dur">t + 0h</span>
+      </div>
+      <div class="tl-item" id="tlWait">
+        <div class="tl-dot"></div>
+        <h4>Waiting period</h4>
+        <p>A fixed delay during which the current owner can still cancel the change outright.</p>
+        <span class="dur">t + 48h</span>
+      </div>
+      <div class="tl-item" id="tlAccept">
+        <div class="tl-dot"></div>
+        <h4>Accept</h4>
+        <p>Only the proposed owner can complete the handover, and only once the delay has passed.</p>
+        <span class="dur">t + 48h+</span>
+      </div>
+    </div>
+    <div class="safety-note">
+      <span class="sw mono" aria-hidden="true">⏻</span>
+      <p><strong>Pause anytime, no delay.</strong> Spending can be frozen the moment something looks wrong — pausing doesn't touch ownership or existing limits, and unpausing restores them exactly as they were.</p>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-col">
+        <h5>AgentVault</h5>
+        <p style="color:var(--muted);font-size:14px;max-width:36ch;margin:0;">A policy vault for agents that spend on your behalf — allowlisted destinations, hard limits, enforced on-chain.</p>
+      </div>
+      <div class="foot-col">
+        <h5>Networks</h5>
+        <div class="row"><span>Testnet</span><span class="mono">chain 968</span></div>
+        <div class="row"><span>Mainnet</span><span class="mono">chain 677</span></div>
+        <div class="row"><span>Native asset</span><span class="mono">BOT</span></div>
+      </div>
+      <div class="foot-col">
+        <h5>Contract</h5>
+        <div class="row"><span>Reentrancy</span><span class="mono">guarded</span></div>
+        <div class="row"><span>Rotation</span><span class="mono">2-day timelock</span></div>
+        <div class="addr-field">
+          <span style="font-size:11px;color:var(--muted);">vault address</span>
+          <input id="vaddr" size="46">
+        </div>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>Live testnet frontend — verify any deployed contract before sending funds.</span>
+      <span class="mono"><a href="#" id="clearLog">clear log</a> · v0.1</span>
+    </div>
+    <pre class="log mono" id="logfoot"></pre>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
