@@ -385,6 +385,19 @@
       <div class="dial-row"><span class="label">Per-tx cap</span><span class="value mono" id="ptxVal">—</span></div>
       <div class="dial-row"><span class="label">Cooldown</span><span class="value mono" id="cdVal">—</span></div>
       <div class="dial-row"><span class="label">Last exec</span><span class="value mono" id="leVal">—</span></div>
+      <div class="dial-row"><span class="label">Vault BOT</span><span class="value mono" id="vaultBal">—</span></div>
+      <div class="dial-row"><span class="label">Vault holds (token above)</span><span class="value mono" id="vaultTokBal">—</span></div>
+
+      <div class="request-box" style="margin-top:12px;">
+        <div class="req-grid">
+          <div class="field"><label>Deposit native BOT</label><input id="depAmt" type="number" step="0.001" placeholder="1.000"></div>
+          <div class="field"><label>Deposit ERC-20 (token above)</label><input id="depTokAmt" type="number" step="0.001" placeholder="0"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:2px;flex-wrap:wrap;">
+          <button class="btn btn-primary" id="depBtn">Deposit native →</button>
+          <button class="btn btn-ghost" id="depTokBtn">Deposit token →</button>
+        </div>
+      </div>
 
       <div class="request-box">
         <div class="req-grid">

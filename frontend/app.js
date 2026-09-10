@@ -28,6 +28,11 @@ const VAULT_ABI=[
 `function acceptOwner()`,
 ];
 
+const ERC20_ABI=[
+`function balanceOf(address) view returns (uint256)`,
+`function transfer(address,uint256) returns (bool)`,
+];
+
 let signer=null;
 let account=null;
 
@@ -49,6 +54,13 @@ function vault(){
   const p=signer||new ethers.JsonRpcProvider(RPC);
   return new ethers.Contract(a,VAULT_ABI,p);
 }
+function vaultAddr(){
+  return el(`vaddr`).value.trim()||VAULT_DEFAULT;
+}
+function erc20(a){
+  const p=signer||new ethers.JsonRpcProvider(RPC);
+  return new ethers.Contract(a,ERC20_ABI,p);
+}
 
 async function connect(){
   if(!window.ethereum){ log(`no wallet found, use MetaMask`); return; }
@@ -63,7 +75,7 @@ async function connect(){
   el(`navState`).textContent=shorten(account)+` · testnet`;
   el(`connectBtn`).textContent=`Connected`;
   log(`connected `+account);
-  readPolicy(); refreshDial();
+  readPolicy(); refreshDial(); refreshVault();
 }
 
 async function act(promise,label){
@@ -72,7 +84,7 @@ async function act(promise,label){
     log(label+` sent `+tx.hash);
     await tx.wait();
     log(`✓ `+label+` confirmed`);
-    readPolicy(); refreshDial();
+    readPolicy(); refreshDial(); refreshVault();
   }catch(e){
     log(`✗ `+label+` failed: `+(e.reason||e.shortMessage||(e.message||e).split(`\n`)[0]));
   }
@@ -155,6 +167,41 @@ async function refreshDial(){
   }
 }
 
+async function refreshVault(){
+  const a=vaultAddr();
+  const bal=el(`vaultBal`), tok=el(`vaultTokBal`);
+  bal.textContent=`—`; tok.textContent=`—`;
+  try{
+    const p=new ethers.JsonRpcProvider(RPC);
+    bal.textContent=fmtW(await p.getBalance(a));
+    const t=el(`dialToken`).value.trim();
+    if(/^0x[0-9a-fA-F]{40}$/.test(t) && t!==`0x0000000000000000000000000000000000000000`){
+      tok.textContent=fmtW(await erc20(t).balanceOf(a));
+    }
+  }catch(e){
+    bal.textContent=`err`;
+  }
+}
+
+async function doDeposit(){
+  if(!signer){ await connect(); if(!signer)return; }
+  const amt=ethers.parseEther(el(`depAmt`).value||`0`);
+  if(amt<=0n){ log(`deposit: amount must be > 0`); return; }
+  await act(signer.sendTransaction({to:vaultAddr(),value:amt}),`deposit native BOT `+ethers.formatEther(amt));
+}
+
+async function doDepositTok(){
+  if(!signer){ await connect(); if(!signer)return; }
+  const t=el(`dialToken`).value.trim();
+  if(!/^0x[0-9a-fA-F]{40}$/.test(t) || t===`0x0000000000000000000000000000000000000000`){
+    log(`deposit token: set a token address in the dial field (0x0 native is for the native deposit)`);
+    return;
+  }
+  const amt=ethers.parseEther(el(`depTokAmt`).value||`0`);
+  if(amt<=0n){ log(`deposit token: amount must be > 0`); return; }
+  await act(erc20(t).transfer(vaultAddr(),amt),`deposit token in dial `+ethers.formatEther(amt));
+}
+
 async function doExecute(){
   const v=vault();
   const target=el(`exTgt`).value.trim();
@@ -218,8 +265,10 @@ async function doOwnercmd(kind){
 document.addEventListener(`DOMContentLoaded`,()=>{
   el(`vaddr`).value=VAULT_DEFAULT;
   el(`connectBtn`).addEventListener(`click`,connect);
-  el(`refreshBtn`).addEventListener(`click`,()=>{ readPolicy(); refreshDial(); });
+  el(`refreshBtn`).addEventListener(`click`,()=>{ readPolicy(); refreshDial(); refreshVault(); });
   el(`execBtn`).addEventListener(`click`,doExecute);
+  el(`depBtn`).addEventListener(`click`,doDeposit);
+  el(`depTokBtn`).addEventListener(`click`,doDepositTok);
   el(`b_setagent`).addEventListener(`click`,()=>doOwnercmd(`agent`));
   el(`b_settarget`).addEventListener(`click`,()=>doOwnercmd(`target`));
   el(`b_setlimit`).addEventListener(`click`,()=>doOwnercmd(`limit`));
@@ -230,7 +279,9 @@ document.addEventListener(`DOMContentLoaded`,()=>{
   el(`b_cancelrotation`).addEventListener(`click`,()=>doOwnercmd(`cancel`));
   el(`b_accept`).addEventListener(`click`,()=>doOwnercmd(`accept`));
   el(`clearLog`).addEventListener(`click`,(e)=>{ e.preventDefault(); for(const id of [`log`,`logfoot`])el(id).innerHTML=``; });
-  el(`vaddr`).addEventListener(`change`,()=>{ readPolicy(); refreshDial(); });
+  el(`vaddr`).addEventListener(`change`,()=>{ readPolicy(); refreshDial(); refreshVault(); });
   for(const id of [`dialAgent`,`dialToken`])el(id).addEventListener(`change`,refreshDial);
-  readPolicy();
+  el(`dialToken`).addEventListener(`change`,refreshVault);
+  readPolicy(); refreshVault();
+  setInterval(()=>{ refreshVault(); },30000);
 });
