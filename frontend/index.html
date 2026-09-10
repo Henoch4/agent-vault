@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<meta name=viewport content=width=device-width,initial-scale=1>
+<title>AgentVault - BOT Chain Testnet</title>
+<script src=https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js></script>
+<style>body{font-family:sans-serif;max-width:720px;margin:24px auto;padding:0 12px}input{width:100%;margin:2px 0}button{margin:4px 4px 4px 0}pre{background:#111;color:#0f0;padding:12px;white-space:pre-wrap}</style>
+</head>
+<body>
+<h1>AgentVault - BOT Chain Testnet</h1>
+<p>Policy vault: owner sets agents, targets, daily limits. Chain 968. Faucet link below.</p>
+<button id=b_connect>Connect wallet</button>
+<p>Vault contract <input id=vaddr size=44></p>
+<h2>Owner - configure</h2>
+<p>Agent <input id=av_a> allowed true or false <input id=av_on value=true> <button id=b_setagent>Set agent</button></p>
+
+<p>Target <input id=tg_t> allowed true or false <input id=tg_on value=true> <button id=b_settarget>Set target</button></p>
+<p>Limit agent <input id=lim_a> token, use 0x0 for native BOT <input id=lim_t> amount in BOT <input id=lim_v> <button id=b_setlimit>Set daily limit</button></p>
+<p>Per-tx cap agent <input id=ptx_a> token <input id=ptx_t> amount in BOT, 0 = no cap <input id=ptx_v> <button id=b_setper>Set per-tx cap</button></p>
+<p>Exec cooldown in seconds, 0 = off <input id=cd_v> <button id=b_setcd>Set cooldown</button></p>
+<p>Pause true or false <input id=p_on value=false> <button id=b_pause>Set paused</button></p>
+<h2>Owner - rotation (2-day timelock)</h2>
+<p>New owner <input id=ro_p> <button id=b_propose>Propose</button> <button id=b_cancelrotation>Cancel</button> <button id=b_accept>Accept (as pending owner)</button></p>
+<h2>Agent - spend</h2>
+<p>Token <input id=ex_tok> to target <input id=ex_tgt> amount in BOT <input id=ex_amt> <button id=b_exec>Execute</button></p>
+<h2>Read state</h2>
+<p>Agent <input id=rd_a> token <input id=rd_t> <button id=b_read>Read</button></p>
+<h2>Owner - withdraw</h2>
+<p>Token <input id=w_tok> amount <input id=w_amt> to <input id=w_to> <button id=b_withdraw>Withdraw</button></p>
+<h2>Log</h2>
+<pre id=log></pre>
+<p><a href=https://faucet.botchain.ai/basic>Testnet faucet</a> - <a href=https://scan.bohr.life>Testnet explorer</a></p>
+<script src=app.js></script>
+</body>
+</html>
