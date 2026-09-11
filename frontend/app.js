@@ -1,3 +1,7 @@
+import * as ethers from 'ethers';
+import { createAppKit } from '@reown/appkit';
+import { EthersAdapter } from '@reown/appkit-adapter-ethers';
+
 const VAULT_DEFAULT=`0x3cb5faCA74f5F0211a1f1a773Ed45B042bDD50C5`;
 const RPC=`https://rpc.bohr.life`;
 const EXPLORER=`https://scan.bohr.life`;
@@ -36,6 +40,129 @@ const ERC20_ABI=[
 let signer=null;
 let account=null;
 
+const PROJECT_ID=`f018499b1e4a94d961ab67aeeeff3254`;
+
+const botTestnet={
+  id:968,
+  chainNamespace:`eip155`,
+  caipNetworkId:`eip155:968`,
+  name:`BOT Chain Testnet`,
+  nativeCurrency:{name:`BOT`,symbol:`BOT`,decimals:18},
+  rpcUrls:{default:{http:[RPC]}},
+  blockExplorers:{default:{name:`BOT Scan`,url:EXPLORER}},
+};
+const botMainnet={
+  id:677,
+  chainNamespace:`eip155`,
+  caipNetworkId:`eip155:677`,
+  name:`BOT Chain`,
+  nativeCurrency:{name:`BOT`,symbol:`BOT`,decimals:18},
+  rpcUrls:{default:{http:[`https://rpc.botchain.ai`]}},
+  blockExplorers:{default:{name:`BOT Scan`,url:`https://scan.botchain.ai`}},
+};
+
+const modal=createAppKit({
+  adapters:[new EthersAdapter()],
+  networks:[botTestnet,botMainnet],
+  defaultNetwork:botTestnet,
+  projectId:PROJECT_ID,
+  metadata:{
+    name:`AgentVault`,
+    description:`Policy vault for autonomous agents on BOT Chain`,
+    url:`https://agent-vault-teal.vercel.app`,
+    icons:[`https://agent-vault-teal.vercel.app/favicon.ico`],
+  },
+  themeVariables:{'--w3m-accent':`#335f74`},
+  features:{analytics:false},
+});
+
+let walletProvider=null;
+let _connectResolve=null;
+
+function getProvider(){
+  if(walletProvider)return walletProvider;
+  try{
+    if(modal&&typeof modal.getWalletProvider===`function`){
+      const p=modal.getWalletProvider(`eip155`)||modal.getWalletProvider();
+      if(p){walletProvider=p;return p;}
+    }
+  }catch(e){}
+  return null;
+}
+
+async function syncFromProvider(wp){
+  let bp=new ethers.BrowserProvider(wp);
+  const net=await bp.getNetwork();
+  if(Number(net.chainId)!==CHAIN_ID){
+    log(`switching to BOT Chain testnet…`);
+    await modal.switchNetwork(botTestnet);
+    bp=new ethers.BrowserProvider(getProvider()||wp);
+  }
+  signer=await bp.getSigner();
+  account=await signer.getAddress();
+}
+
+function updateConnectedUI(){
+  el(`navState`).textContent=shorten(account)+` · testnet`;
+  el(`connectBtn`).textContent=`Connected`;
+}
+function updateDisconnectedUI(){
+  el(`navState`).textContent=`read-only`;
+  el(`connectBtn`).textContent=`Connect wallet`;
+}
+function postConnectRefresh(){
+  readPolicy();refreshDial();refreshVault();
+}
+
+modal.subscribeProviders((state)=>{
+  if(state&&state[`eip155`])walletProvider=state[`eip155`];
+});
+
+modal.subscribeAccount(async (state)=>{
+  if(state&&state.isConnected&&state.address){
+    account=state.address;
+    const wp=getProvider();
+    if(wp){
+      try{
+        await syncFromProvider(wp);
+        updateConnectedUI();
+        log(`connected `+account);
+        postConnectRefresh();
+      }catch(e){log(`connect failed: `+(e.reason||e.shortMessage||e.message));}
+    }else{
+      updateConnectedUI();
+      log(`connected `+account);
+      postConnectRefresh();
+    }
+    if(_connectResolve){_connectResolve(!!signer);_connectResolve=null;}
+  }else{
+    const was=!!account;
+    account=null;signer=null;
+    updateDisconnectedUI();
+    if(was)log(`disconnected`);
+    if(_connectResolve){_connectResolve(false);_connectResolve=null;}
+  }
+});
+
+modal.subscribeState((state)=>{
+  if(state&&state.open===false&&_connectResolve&&!signer){
+    _connectResolve(false);_connectResolve=null;
+  }
+});
+
+function onConnectClick(){
+  let isConn=false;
+  try{isConn=modal.getIsConnectedState();}catch(e){}
+  if(isConn&&getProvider()){
+    try{
+      const r=modal.open({view:`Account`});
+      if(r&&typeof r.catch===`function`)r.catch(()=>{try{modal.open();}catch(e){}});
+    }catch(e){try{modal.open();}catch(_){}}
+    return;
+  }
+  connect();
+}
+
 function el(id){ return document.getElementById(id); }
 function shorten(a){ return a ? a.slice(0,6)+`…`+a.slice(-4) : (a===null?`null`:`—`); }
 function log(m){
@@ -64,23 +191,27 @@ function erc20(a){
 
 async function connect(e){
   if(e) e.preventDefault();
-  const eth=window.ethereum;
-  if(!eth){ log(`no wallet found — install MetaMask and enable it`); return; }
-  const provider=eth.providers ? eth.providers[0]||eth : eth;
   try{
-    const accs=await provider.request({method:`eth_requestAccounts`});
-    account=accs[0];
-    try{
-      await provider.request({method:`wallet_switchEthereumChain`,params:[{chainId:`0x${CHAIN_ID.toString(16)}`}]});
-    }catch(e){
-      await provider.request({method:`wallet_addEthereumChain`,params:[{chainId:`0x${CHAIN_ID.toString(16)}`,chainName:`BOT Chain Testnet`,nativeCurrency:{name:`BOT`,symbol:`BOT`,decimals:18},rpcUrls:[RPC],blockExplorerUrls:[EXPLORER]}]});
+    if(modal.getIsConnectedState()){
+      const wp=getProvider();
+      if(wp){
+        await syncFromProvider(wp);
+        updateConnectedUI();
+        log(`connected `+account);
+        postConnectRefresh();
+        return true;
+      }
     }
-    signer=await new ethers.BrowserProvider(provider).getSigner();
-    el(`navState`).textContent=shorten(account)+` · testnet`;
-    el(`connectBtn`).textContent=`Connected`;
-    log(`connected `+account);
-    readPolicy(); refreshDial(); refreshVault();
-  }catch(e){ log(`connect failed: `+(e.reason||e.shortMessage||e.message)); }
+  }catch(err){}
+  const pending=new Promise((resolve)=>{_connectResolve=resolve;});
+  try{modal.open();}
+  catch(err){
+    _connectResolve=null;
+    log(`connect failed: `+(err.message||err));
+    return false;
+  }
+  const timeout=new Promise((resolve)=>setTimeout(()=>resolve(!!signer),120000));
+  return Promise.race([pending,timeout]);
 }
 
 async function act(promise,label){
@@ -269,7 +400,7 @@ async function doOwnercmd(kind){
 
 document.addEventListener(`DOMContentLoaded`,()=>{
   el(`vaddr`).value=VAULT_DEFAULT;
-  el(`connectBtn`).addEventListener(`click`,connect);
+  el(`connectBtn`).addEventListener(`click`,(e)=>{ e.preventDefault(); onConnectClick(); });
   el(`refreshBtn`).addEventListener(`click`,()=>{ readPolicy(); refreshDial(); refreshVault(); });
   el(`execBtn`).addEventListener(`click`,doExecute);
   el(`depBtn`).addEventListener(`click`,doDeposit);
@@ -289,4 +420,17 @@ document.addEventListener(`DOMContentLoaded`,()=>{
   el(`dialToken`).addEventListener(`change`,refreshVault);
   readPolicy(); refreshVault();
   setInterval(()=>{ refreshVault(); },30000);
+  setTimeout(async ()=>{
+    try{
+      if(!signer&&modal.getIsConnectedState()){
+        const wp=getProvider();
+        if(wp){
+          await syncFromProvider(wp);
+          updateConnectedUI();
+          log(`session restored `+account);
+          postConnectRefresh();
+        }
+      }
+    }catch(e){}
+  },800);
 });
