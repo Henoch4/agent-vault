@@ -2,7 +2,7 @@ import * as ethers from 'ethers';
 import { createAppKit } from '@reown/appkit';
 import { EthersAdapter } from '@reown/appkit-adapter-ethers';
 
-const VAULT_DEFAULT=`0x3cb5faCA74f5F0211a1f1a773Ed45B042bDD50C5`;
+const VAULT_DEFAULT=`0x7CF3441FC2145DC757B3801A9134363f78aE4b57`;
 const RPC=`https://rpc.bohr.life`;
 const EXPLORER=`https://scan.bohr.life`;
 const CHAIN_ID=0x3c8;
@@ -19,6 +19,13 @@ const VAULT_ABI=[
 `function execCooldown() view returns (uint256)`,
 `function lastExec(address) view returns (uint256)`,
 `function daySpent(address,address) view returns (uint256)`,
+`function isOwnerContract() view returns (bool)`,
+`function isTargetAllowed(address) view returns (bool)`,
+`function getBundleTargets(bytes32) view returns (address[])`,
+`function wouldExecute(address,address,address,uint256) view returns (bool,string)`,
+`function createBundle(bytes32,string,address[])`,
+`function addTargetToBundle(bytes32,address)`,
+`function removeTargetFromBundle(bytes32,address)`,
 `function setAgent(address,bool)`,
 `function setTarget(address,bool)`,
 `function setDailyLimit(address,address,uint256)`,

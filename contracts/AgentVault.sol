@@ -24,6 +24,9 @@ contract AgentVault is ReentrancyGuard {
     // Allowlist bundles: bundleId -> address[]
     mapping(bytes32 => address[]) public bundleTargets;
     mapping(bytes32 => string) public bundleNames;
+    // O(1) membership index: target -> number of bundles containing it
+    mapping(bytes32 => mapping(address => bool)) public bundleMember;
+    mapping(address => uint256) public bundleMemberCount;
 
     using SafeERC20 for IERC20;
 
@@ -106,14 +109,23 @@ contract AgentVault is ReentrancyGuard {
         return (true, "OK");
     }
 
+    /// @notice True if `target` sits in at least one bundle (O(1) via ref-count index).
     function _isTargetInAnyBundle(address target) internal view returns (bool) {
-        // Placeholder: not implemented efficiently.
-        return false;
+        return bundleMemberCount[target] > 0;
     }
 
     function _isTargetInBundle(address target) internal view returns (bool) {
-        // Placeholder: not implemented efficiently.
-        return false;
+        return bundleMemberCount[target] > 0;
+    }
+
+    /// @notice Public read helper: direct allowlist OR any bundle membership.
+    function isTargetAllowed(address target) external view returns (bool) {
+        return targets[target] || bundleMemberCount[target] > 0;
+    }
+
+    /// @notice Full bundle member list (for SDK / relayer / UI).
+    function getBundleTargets(bytes32 bundleId) external view returns (address[] memory) {
+        return bundleTargets[bundleId];
     }
 
     // --- Configuration (owner only) ---
@@ -178,9 +190,12 @@ contract AgentVault is ReentrancyGuard {
         if (bytes(bundleNames[bundleId]).length > 0) revert BundleExists();
         if (bytes(name).length == 0) revert InvalidBundleName();
         bundleNames[bundleId] = name;
-        bundleTargets[bundleId] = targets_;
         for (uint256 i = 0; i < targets_.length; i++) {
             if (targets_[i] == address(0)) revert ZeroAddr();
+            if (bundleMember[bundleId][targets_[i]]) revert BundleExists();
+            bundleMember[bundleId][targets_[i]] = true;
+            bundleMemberCount[targets_[i]] += 1;
+            bundleTargets[bundleId].push(targets_[i]);
         }
         emit BundleCreated(bundleId, name, targets_);
     }
@@ -188,23 +203,26 @@ contract AgentVault is ReentrancyGuard {
     function addTargetToBundle(bytes32 bundleId, address target) external onlyOwner {
         if (bytes(bundleNames[bundleId]).length == 0) revert BundleNotFound();
         if (target == address(0)) revert ZeroAddr();
+        if (bundleMember[bundleId][target]) revert BundleExists();
+        bundleMember[bundleId][target] = true;
+        bundleMemberCount[target] += 1;
         bundleTargets[bundleId].push(target);
         emit BundleTargetAdded(bundleId, target);
     }
 
     function removeTargetFromBundle(bytes32 bundleId, address target) external onlyOwner {
         if (bytes(bundleNames[bundleId]).length == 0) revert BundleNotFound();
+        if (!bundleMember[bundleId][target]) revert TargetDenied();
         address[] storage arr = bundleTargets[bundleId];
-        uint256 idx = type(uint256).max;
         for (uint256 i = 0; i < arr.length; i++) {
             if (arr[i] == target) {
-                idx = i;
+                arr[i] = arr[arr.length - 1];
+                arr.pop();
                 break;
             }
         }
-        if (idx == type(uint256).max) revert TargetDenied();
-        arr[idx] = arr[arr.length - 1];
-        arr.pop();
+        bundleMember[bundleId][target] = false;
+        bundleMemberCount[target] -= 1;
         emit BundleTargetRemoved(bundleId, target);
     }
 
