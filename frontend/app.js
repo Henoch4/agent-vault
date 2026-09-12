@@ -266,7 +266,7 @@ async function readPolicy(){
     try{
       const multi=await v.isOwnerContract();
       const badge=el(`ownerBadge`), hero=el(`ownerBadgeHero`);
-      const txt=multi?`multisig-protected`:`single-EOA owner`;
+      const txt=multi?`team approval`:`single key — higher risk`;
       if(badge){badge.textContent=txt;badge.style.color=multi?`var(--steel)`:`var(--rust)`;}
       if(hero){hero.textContent=`· `+txt;hero.style.color=multi?`var(--steel)`:`var(--rust)`;}
     }catch(e){}

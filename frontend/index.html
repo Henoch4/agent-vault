@@ -459,7 +459,7 @@
       <p class="kicker mono">Owner console</p>
       <h2>Write the policy, keep the keys</h2>
       <div class="status-strip">
-        <span>owner <span class="val" id="stOwner">—</span> <span class="val" id="ownerBadge" title="Whether the owner key is a multisig contract (T5)">—</span></span>
+        <span>owner <span class="val" id="stOwner">—</span> <span class="val" id="ownerBadge" title="Whether one key or team approval controls the vault">—</span></span>
         <span>paused <span class="val" id="stPaused">—</span></span>
         <span>pendingOwner <span class="val" id="stPending">—</span></span>
         <span>rotationAt <span class="val" id="stRotationAt">—</span></span>
@@ -469,21 +469,21 @@
     <div class="console-grid">
       <div class="console-card">
         <h3>Agents</h3>
-        <div class="sub">Allow or block an address that may spend from the vault.</div>
+        <div class="sub">Only these wallets can ever move money out — cut one off instantly if its key leaks.</div>
         <div class="field"><label>Agent address</label><input id="ag_addr" placeholder="0x…"></div>
         <div class="field"><label>Status</label><select id="ag_on"><option value="true">allow</option><option value="false">block</option></select></div>
         <button class="btn btn-primary" id="b_setagent">setAgent →</button>
       </div>
       <div class="console-card">
         <h3>Destinations</h3>
-        <div class="sub">Allowlist where vault funds may be paid out.</div>
+        <div class="sub">Money can only ever go to these addresses. Anywhere else, it stays put.</div>
         <div class="field"><label>Target address</label><input id="tg_t" placeholder="0x…"></div>
         <div class="field"><label>Status</label><select id="tg_on"><option value="true">allow</option><option value="false">block</option></select></div>
         <button class="btn btn-primary" id="b_settarget">setTarget →</button>
       </div>
       <div class="console-card">
         <h3>Daily limit</h3>
-        <div class="sub">Per agent, per token, resets every 24h.</div>
+        <div class="sub">The most an agent can move per token each day — resets every 24h.</div>
         <div class="field"><label>Agent</label><input id="lim_a" placeholder="0x…"></div>
         <div class="field"><label>Token</label><input id="lim_t" placeholder="0x0 for native BOT"></div>
         <div class="field"><label>Limit (BOT)</label><input id="lim_v" type="number" step="0.001" placeholder="100"></div>
@@ -491,7 +491,7 @@
       </div>
       <div class="console-card">
         <h3>Per-tx cap &amp; cooldown</h3>
-        <div class="sub">Optional. 0 = no cap, no pause between executions.</div>
+        <div class="sub">Cap any single transfer and slow down runaway agents. 0 = no cap, no forced pause.</div>
         <div class="field"><label>Agent</label><input id="ptx_a" placeholder="0x…"></div>
         <div class="field"><label>Token</label><input id="ptx_t" placeholder="0x0 for native BOT"></div>
         <div class="field"><label>Per-tx cap (BOT)</label><input id="ptx_v" type="number" step="0.001" placeholder="0 = off"></div>
@@ -500,7 +500,7 @@
       </div>
       <div class="console-card">
         <h3>Pause &amp; withdraw</h3>
-        <div class="sub">Freeze all spending instantly; owner can pull funds.</div>
+        <div class="sub">Stop all spending instantly. As owner, you can always pull funds out.</div>
         <div class="field"><label>Pause state</label><select id="p_on"><option value="true">pause vault</option><option value="false">unpause</option></select></div>
         <button class="btn" id="b_pause">setPaused →</button>
         <hr style="border:none;border-top:1px solid var(--hairline);margin:14px 0;">
