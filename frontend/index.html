@@ -149,10 +149,10 @@
   .dial-panel-head .title{font-size:13.5px;color:var(--muted);}
   .dial-panel-head .title input{
     background:var(--panel-2);border:1px solid var(--hairline);border-radius:4px;
-    color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12.5px;
-    padding:3px 8px;width:150px;
+    color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:16px;
+    padding:8px;width:170px;min-height:44px;
   }
-  @media(max-width:400px){.dial-panel-head .title input{width:120px;}}
+  @media(max-width:400px){.dial-panel-head .title input{width:140px;}}
   @media(max-width:640px){
     header.hero{padding:52px 0 44px;}
     .dial-panel{padding:20px 18px 18px;}
@@ -419,7 +419,7 @@
         <span class="title">Agent: <input id="dialAgent" value="0x" placeholder="agent address"></span>
         <span class="pill mono live">live policy</span>
       </div>
-      <div class="dial-row"><span class="label">Token</span><span class="value mono"><input id="dialToken" style="background:var(--panel-2);border:1px solid var(--hairline);border-radius:4px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12.5px;padding:3px 8px;width:150px;" value="0x" placeholder="token or 0x0 native"></span></div>
+      <div class="dial-row"><span class="label">Token</span><span class="value mono"><input id="dialToken" style="background:var(--panel-2);border:1px solid var(--hairline);border-radius:4px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:16px;padding:8px;width:170px;min-height:44px;" value="0x" placeholder="token or 0x0 native"></span></div>
       <div class="dial-row"><span class="label">Daily limit</span><span class="value mono" id="limitVal">—</span></div>
       <div class="meter"><div class="meter-fill" id="meterFill"></div></div>
       <div class="dial-row"><span class="label">Used today</span><span class="value mono" id="usedVal">—</span></div>
