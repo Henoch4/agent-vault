@@ -13,6 +13,10 @@ Agents spend inside policy with no extra signatures.
 - Mainnet (677): `0xA27963D86F6805ED72591d59c58fed96F4fd9c81` ([explorer](https://scan.botchain.ai/address/0xA27963D86F6805ED72591d59c58fed96F4fd9c81#code))
 - Both verified, same PolicyEngine-based bytecode. Owner on both: `0xCeA3A19feb565bee69e505112d405b1a1f31F230` (EOA — move to multisig per `docs/THREAT_MODEL.md` T5).
 
+## Team Safe (2-of-2, all projects)
+- Safe: `0x3f6599D5694044Ac0B357695843391220a5aE0c3` ([explorer](https://scan.botchain.ai/address/0x3f6599D5694044Ac0B357695843391220a5aE0c3)) — owners `0x79d0…9188` + `0x7765…5D82`, threshold 2.
+- Mainnet vault rotation: `proposeOwner(safe)` tx `0xf187e5b4c40fb1df4be6e59d50d49a223058544f44c8ee527906b2e4456d8b24`, accept unlocks **2026-09-14T01:29:11Z** (2-day timelock, Safe executes `acceptOwner`).
+
 ## Commands
 - npm install
 - npx hardhat test - full suite, 19 tests (core + bundles + invariants fuzz + SDK)
