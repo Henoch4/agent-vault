@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AgentVault — an allowance for autonomous agents</title>
+<link rel="icon" type="image/png" href="./logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -68,6 +69,7 @@
     content:"";position:absolute;inset:5px;
     border:1.5px solid var(--brass);border-radius:1px;
   }
+  .logo-svg{width:26px;height:26px;flex:none;}
   .nav-links{display:flex;align-items:center;gap:36px;font-size:14.5px;color:var(--muted);}
   .nav-links a{text-decoration:none;transition:color .15s ease;}
   .nav-links a:hover, .nav-links a:focus-visible{color:var(--text);}
@@ -379,7 +381,7 @@
 
 <nav>
   <div class="wrap nav-inner">
-    <div class="logo"><span class="logo-mark" aria-hidden="true"></span>AgentVault</div>
+    <div class="logo"><svg class="logo-svg" viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="var(--brass)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M47 9 H27 A15 15 0 0 0 12 24 V40 A15 15 0 0 0 27 55 H29"/><path d="M37 55 H39 A15 15 0 0 0 54 40 V24 A15 15 0 0 0 39 9 H37"/><path d="M33 55 V31 M33 38 L24 32 M33 38 L42 32"/><circle cx="33" cy="23" r="5.5"/><circle cx="22" cy="30" r="4.5"/><circle cx="44" cy="30" r="4.5"/></g></svg>AgentVault</div>
     <div class="nav-links">
       <a href="#how">How it works</a>
       <a href="#guardrails">Guardrails</a>
