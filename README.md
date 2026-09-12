@@ -17,6 +17,11 @@ Agents spend inside policy with no extra signatures.
 - Safe: `0x3f6599D5694044Ac0B357695843391220a5aE0c3` ([explorer](https://scan.botchain.ai/address/0x3f6599D5694044Ac0B357695843391220a5aE0c3)) — owners `0x79d0…9188` + `0x7765…5D82`, threshold 2.
 - Mainnet vault rotation: `proposeOwner(safe)` tx `0xf187e5b4c40fb1df4be6e59d50d49a223058544f44c8ee527906b2e4456d8b24`, accept unlocks **2026-09-14T01:29:11Z** (2-day timelock, Safe executes `acceptOwner`).
 
+## Mainnet starter policy (live)
+- Agent: `0xa63C57c778Bf6E045e7FCdbD114E50f7a9EcABDA` (key in `.env` as `AGENT_KEY` — gitignored, back it up, only copy)
+- Target: deployer wallet (self-payout loop first) · daily 0.5 BOT · per-tx 0.1 BOT · cooldown 300s
+- Verified: `wouldExecute(0.05)` → `OK`. Vault unfunded — fund only when ready for live spends.
+
 ## Commands
 - npm install
 - npx hardhat test - full suite, 19 tests (core + bundles + invariants fuzz + SDK)
