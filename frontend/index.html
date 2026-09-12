@@ -74,9 +74,12 @@
   .nav-wallet{display:flex;align-items:center;gap:12px;}
   @media(max-width:760px){.nav-links a:not(.nav-cta){display:none;}}
   @media(max-width:560px){
+    .nav-inner{flex-wrap:wrap;row-gap:10px;}
     .nav-links{gap:10px;}
+    .nav-wallet{flex-wrap:wrap;gap:8px;}
     #navState{display:none;}
     .nav-links .btn{padding:9px 14px;font-size:13.5px;}
+    #netSel{font-size:16px;padding:8px 6px;}
   }
 
   .btn{
@@ -383,7 +386,7 @@
       <a href="#security">Security</a>
       <a href="#whitepaper">Whitepaper</a>
       <div class="nav-wallet">
-        <select id="netSel" class="mono" title="Network" style="background:var(--panel);border:1px solid var(--hairline-strong);border-radius:6px;font-size:13px;padding:10px 8px;min-height:44px;color:var(--text);">
+        <select id="netSel" class="mono" title="Network" style="background:var(--panel);border:1px solid var(--hairline-strong);border-radius:6px;font-size:16px;padding:10px 8px;min-height:44px;color:var(--text);max-width:100%;">
           <option value="968">Testnet 968</option>
           <option value="677">Mainnet 677</option>
         </select>
