@@ -2,10 +2,28 @@ import * as ethers from 'ethers';
 import { createAppKit } from '@reown/appkit';
 import { EthersAdapter } from '@reown/appkit-adapter-ethers';
 
-const VAULT_DEFAULT=`0xB9A5a2b1CF92186364080264acf64cd5C5270685`;
-const RPC=`https://rpc.bohr.life`;
-const EXPLORER=`https://scan.bohr.life`;
-const CHAIN_ID=0x3c8;
+const NETS={
+  968:{label:`testnet`,rpc:`https://rpc.bohr.life`,explorer:`https://scan.bohr.life`,
+    vault:`0xB9A5a2b1CF92186364080264acf64cd5C5270685`},
+  677:{label:`mainnet`,rpc:`https://rpc.botchain.ai`,explorer:`https://scan.botchain.ai`,
+    vault:`0xA27963D86F6805ED72591d59c58fed96F4fd9c81`},
+};
+const NET_KEY=`av_net`;
+let CHAIN_ID=Number(localStorage.getItem(NET_KEY))||968;
+if(!NETS[CHAIN_ID])CHAIN_ID=968;
+let RPC=NETS[CHAIN_ID].rpc;
+let EXPLORER=NETS[CHAIN_ID].explorer;
+let VAULT_DEFAULT=NETS[CHAIN_ID].vault;
+function netObj(id){return id===677?botMainnet:botTestnet;}
+function applyNet(id){
+  CHAIN_ID=id;RPC=NETS[id].rpc;EXPLORER=NETS[id].explorer;VAULT_DEFAULT=NETS[id].vault;
+  try{localStorage.setItem(NET_KEY,String(id));}catch(e){}
+  const sel=el(`netSel`);if(sel)sel.value=String(id);
+  el(`vaddr`).value=VAULT_DEFAULT;
+  log(`network → BOT Chain `+NETS[id].label+` `+id);
+  readPolicy();refreshDial();refreshVault();
+  if(account)el(`navState`).textContent=shorten(account)+` · `+NETS[id].label;
+}
 
 const VAULT_ABI=[
 `function owner() view returns (address)`,
@@ -55,8 +73,8 @@ const botTestnet={
   caipNetworkId:`eip155:968`,
   name:`BOT Chain Testnet`,
   nativeCurrency:{name:`BOT`,symbol:`BOT`,decimals:18},
-  rpcUrls:{default:{http:[RPC]}},
-  blockExplorers:{default:{name:`BOT Scan`,url:EXPLORER}},
+  rpcUrls:{default:{http:[`https://rpc.bohr.life`]}},
+  blockExplorers:{default:{name:`BOT Scan`,url:`https://scan.bohr.life`}},
 };
 const botMainnet={
   id:677,
@@ -101,8 +119,8 @@ async function syncFromProvider(wp){
   let bp=new ethers.BrowserProvider(wp);
   const net=await bp.getNetwork();
   if(Number(net.chainId)!==CHAIN_ID){
-    log(`switching to BOT Chain testnet…`);
-    await modal.switchNetwork(botTestnet);
+    log(`switching to BOT Chain `+NETS[CHAIN_ID].label+`…`);
+    await modal.switchNetwork(netObj(CHAIN_ID));
     bp=new ethers.BrowserProvider(getProvider()||wp);
   }
   signer=await bp.getSigner();
@@ -110,7 +128,7 @@ async function syncFromProvider(wp){
 }
 
 function updateConnectedUI(){
-  el(`navState`).textContent=shorten(account)+` · testnet`;
+  el(`navState`).textContent=shorten(account)+` · `+NETS[CHAIN_ID].label;
   el(`connectBtn`).textContent=`Connected`;
 }
 function updateDisconnectedUI(){
@@ -448,6 +466,7 @@ async function doOwnercmd(kind){
 
 document.addEventListener(`DOMContentLoaded`,()=>{
   el(`vaddr`).value=VAULT_DEFAULT;
+  const sel=el(`netSel`);if(sel){sel.value=String(CHAIN_ID);sel.addEventListener(`change`,()=>applyNet(Number(sel.value)));}
   el(`connectBtn`).addEventListener(`click`,(e)=>{ e.preventDefault(); onConnectClick(); });
   el(`refreshBtn`).addEventListener(`click`,()=>{ readPolicy(); refreshDial(); refreshVault(); });
   el(`execBtn`).addEventListener(`click`,doExecute);
