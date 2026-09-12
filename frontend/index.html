@@ -388,7 +388,7 @@
         <a href="#how" class="btn btn-ghost">See how it works</a>
       </div>
       <div class="hero-meta">
-        <div><strong id="metaOwner">0x…</strong>vault owner</div>
+        <div><strong id="metaOwner">0x…</strong>vault owner <span id="ownerBadgeHero" class="mono" style="font-size:11px;"></span></div>
         <div><strong id="metaPause">—</strong>spending state</div>
         <div><strong>48 hr</strong>delay on any ownership change</div>
       </div>
@@ -426,6 +426,7 @@
           <div class="field"><label>Amount (BOT / token)</label><input id="exAmt" type="number" step="0.001" placeholder="0.500"></div>
         </div>
         <button class="btn btn-primary" id="execBtn">Execute as agent →</button>
+        <button class="btn btn-ghost" id="dryBtn" style="margin-top:8px;width:100%;">Dry-run check (no gas) →</button>
         <div class="reqline mono" style="margin-top:10px;" id="reqLine">Connected agent sends the request; policy checks gate it.</div>
       </div>
 
@@ -444,7 +445,7 @@
       <p class="kicker mono">Owner console</p>
       <h2>Write the policy, keep the keys</h2>
       <div class="status-strip">
-        <span>owner <span class="val" id="stOwner">—</span></span>
+        <span>owner <span class="val" id="stOwner">—</span> <span class="val" id="ownerBadge" title="Whether the owner key is a multisig contract (T5)">—</span></span>
         <span>paused <span class="val" id="stPaused">—</span></span>
         <span>pendingOwner <span class="val" id="stPending">—</span></span>
         <span>rotationAt <span class="val" id="stRotationAt">—</span></span>

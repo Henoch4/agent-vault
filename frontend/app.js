@@ -2,7 +2,7 @@ import * as ethers from 'ethers';
 import { createAppKit } from '@reown/appkit';
 import { EthersAdapter } from '@reown/appkit-adapter-ethers';
 
-const VAULT_DEFAULT=`0x7CF3441FC2145DC757B3801A9134363f78aE4b57`;
+const VAULT_DEFAULT=`0xB9A5a2b1CF92186364080264acf64cd5C5270685`;
 const RPC=`https://rpc.bohr.life`;
 const EXPLORER=`https://scan.bohr.life`;
 const CHAIN_ID=0x3c8;
@@ -245,6 +245,13 @@ async function readPolicy(){
     const zero=`0x0000000000000000000000000000000000000000`;
     const cdTxt=cd?cd+` s`:`off`;
     el(`stOwner`).textContent=shorten(owner);
+    try{
+      const multi=await v.isOwnerContract();
+      const badge=el(`ownerBadge`), hero=el(`ownerBadgeHero`);
+      const txt=multi?`multisig-protected`:`single-EOA owner`;
+      if(badge){badge.textContent=txt;badge.style.color=multi?`var(--steel)`:`var(--rust)`;}
+      if(hero){hero.textContent=`· `+txt;hero.style.color=multi?`var(--steel)`:`var(--rust)`;}
+    }catch(e){}
     el(`stPaused`).textContent=paused?`ON`:`off`;
     el(`stPaused`).className=el(`stPaused`).className=paused?`val on`:`val`;
     el(`stPending`).textContent=pending===zero?`none`:shorten(pending);
@@ -345,6 +352,40 @@ async function doDepositTok(){
   await act(erc20(t).transfer(vaultAddr(),amt),`deposit token in dial `+ethers.formatEther(amt));
 }
 
+async function doDryRun(){
+  const v=vault();
+  const target=el(`exTgt`).value.trim();
+  const amt=el(`exAmt`).value.trim();
+  const token=el(`dialToken`).value.trim()||`0x0000000000000000000000000000000000000000`;
+  const verdict=el(`verdict`);
+  if(!target || !amt){
+    verdict.className=`verdict denied`;
+    el(`verdictText`).innerHTML=`Missing target or amount`;
+    return;
+  }
+  let who=null;
+  try{ who=signer?await signer.getAddress():el(`dialAgent`).value.trim(); }catch(e){}
+  if(!who || !/^0x[0-9a-fA-F]{40}$/.test(who)){
+    verdict.className=`verdict denied`;
+    el(`verdictText`).innerHTML=`Connect a wallet or set the dial agent first`;
+    return;
+  }
+  try{
+    const [ok,reason]=await v.wouldExecute(who,token,target,ethers.parseEther(amt));
+    if(ok){
+      verdict.className=`verdict approved`;
+      el(`verdictText`).innerHTML=`Dry-run: would succeed — within policy (no gas spent)`;
+    }else{
+      verdict.className=`verdict denied`;
+      el(`verdictText`).innerHTML=`Dry-run: BLOCKED &nbsp;<span class="reason mono">${reason}</span>`;
+    }
+    el(`reqLine`).textContent=`wouldExecute(${shorten(who)} → ${shorten(target)} ${amt}) = ${ok} ${reason}`;
+  }catch(e){
+    verdict.className=`verdict denied`;
+    el(`verdictText`).innerHTML=`Dry-run error &nbsp;<span class="reason mono">${(e.shortMessage||e.message||e).toString().split(`\n`)[0]}</span>`;
+  }
+}
+
 async function doExecute(){
   const v=vault();
   const target=el(`exTgt`).value.trim();
@@ -410,6 +451,7 @@ document.addEventListener(`DOMContentLoaded`,()=>{
   el(`connectBtn`).addEventListener(`click`,(e)=>{ e.preventDefault(); onConnectClick(); });
   el(`refreshBtn`).addEventListener(`click`,()=>{ readPolicy(); refreshDial(); refreshVault(); });
   el(`execBtn`).addEventListener(`click`,doExecute);
+  el(`dryBtn`).addEventListener(`click`,doDryRun);
   el(`depBtn`).addEventListener(`click`,doDeposit);
   el(`depTokBtn`).addEventListener(`click`,doDepositTok);
   el(`b_setagent`).addEventListener(`click`,()=>doOwnercmd(`agent`));
