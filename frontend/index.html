@@ -335,6 +335,7 @@
     padding-bottom:32px;border-bottom:1px solid var(--hairline);margin-bottom:24px;
   }
   @media(max-width:700px){.foot-grid{grid-template-columns:1fr;gap:32px;}}
+  @media(max-width:560px){.proof{max-width:100%;}.proof .proof-grid{grid-template-columns:1fr;gap:2px;}.proof .proof-link{display:block;margin-top:8px;}}
   .foot-col h5{font-size:13px;color:var(--muted);margin:0 0 14px;font-weight:600;}
   .foot-col .row{display:flex;justify-content:space-between;font-size:13.5px;padding:6px 0;color:var(--text);gap:10px;flex-wrap:wrap;}
   .foot-col .row span:first-child{color:var(--muted);}
@@ -348,6 +349,12 @@
     font-size:13px;color:var(--muted);
   }
   .foot-bottom a{color:var(--brass);text-decoration:none;}
+  .proof{margin-top:24px;padding:16px 18px;background:var(--panel-2);border:1px solid var(--hairline);border-radius:8px;max-width:380px;}
+  .proof .proof-title{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;}
+  .proof .proof-grid{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);}
+  .proof .proof-grid .val{color:var(--brass);overflow-wrap:anywhere;}
+  .proof .proof-link{display:inline-block;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--brass);text-decoration:none;}
+  .proof .proof-link:hover{text-decoration:underline;}
   #logfoot{max-height:120px;overflow:auto;white-space:pre-wrap;word-break:break-all;}
 
   .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}
@@ -798,6 +805,15 @@ owner: propose / cancel / accept owner     ── 48h timelock, only proposed ow
     <div class="foot-bottom">
       <span>Live frontend — testnet 968 + mainnet 677. Verify any deployed contract before sending funds.</span>
       <span class="mono"><a href="#" id="clearLog">clear log</a> · v0.1</span>
+    </div>
+    <div class="proof">
+      <div class="proof-title">Proof on BOT Mainnet</div>
+      <div class="proof-grid">
+        <span>Chain ID</span><span class="val">677</span>
+        <span>Contract</span><span class="val">0xA27963D86F6805ED72591d59c58fed96F4fd9c81</span>
+        <span>Latest Tx</span><span class="val">0x8d27ecda7720de8118bc7c10ed13f1cf068adb594055bba388c7e40a2e780cd8</span>
+      </div>
+      <a href="https://scan.botchain.ai/tx/0x8d27ecda7720de8118bc7c10ed13f1cf068adb594055bba388c7e40a2e780cd8" target="_blank" rel="noopener" class="proof-link">View transaction on BOTScan ↗</a>
     </div>
     <pre class="log mono" id="logfoot"></pre>
   </div>
