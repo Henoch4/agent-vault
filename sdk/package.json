@@ -3,8 +3,29 @@
   "version": "0.2.0",
   "description": "Minimal SDK for AgentVault policy-gated spending vaults on BOT Chain.",
   "main": "index.js",
+  "types": "index.d.ts",
   "license": "MIT",
+  "author": "AgentVault / BOT Chain",
+  "keywords": ["bot-chain", "agent", "vault", "policy", "ethereum", "solidity", "sdk", "langchain"],
+  "files": ["index.js", "langchain.js", "README.md", "package.json"],
+  "scripts": {
+    "test": "node -e \"const s=require('./index.js'); console.log('SDK OK:', Object.keys(s).join(', '))\"",
+    "prepublishOnly": "npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Henoch4/agent-vault.git",
+    "directory": "sdk"
+  },
+  "homepage": "https://github.com/Henoch4/agent-vault#readme",
+  "bugs": {
+    "url": "https://github.com/Henoch4/agent-vault/issues"
+  },
   "peerDependencies": {
     "ethers": "^6.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }
