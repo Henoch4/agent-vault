@@ -10,7 +10,13 @@ AgentVault is an on-chain policy engine that lets autonomous agents spend BOT to
 
 All policy logic lives in the shared `PolicyEngine` base contract (audited, reusable across all BOT Chain flagship apps). AgentVault is just the fund-movement layer on top.
 
-## 🔗 Mainnet Details
+## 🔗 Live Sites
+
+| Project | Link |
+|---------|------|
+| **AgentVault** | [agent-vault-teal.vercel.app](https://agent-vault-teal.vercel.app/) |
+| **BotLaunch** | [bot-launch-delta.vercel.app](https://bot-launch-delta.vercel.app/) |
+| **MicroPredict** | [micro-predict.vercel.app](https://micro-predict.vercel.app/) |
 
 | Detail | Value |
 |--------|-------|
